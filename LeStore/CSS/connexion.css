@@ -1,0 +1,81 @@
+/* Style global pour la page de connexion */
+.login-container {
+    width: 100%;
+    max-width: 400px;
+    margin: 50px auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.login-container h1 {
+    text-align: center;
+    color: #444;
+}
+
+.login-container input {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.login-container button {
+    width: 100%;
+    background-color: #007BFF;
+    color: white;
+    font-weight: bold;
+}
+
+/* Style pour le message d'erreur */
+.message.error {
+    color: #fff; /* Texte blanc */
+    background-color: #e74c3c; /* Rouge vif pour signaler une erreur */
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 4px;
+    text-align: center;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    animation: fadeIn 0.5s ease-in-out; /* Animation pour apparaître en douceur */
+}
+
+/* Animation pour le message d'erreur */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Style pour le message d'erreur */
+.error-message {
+    color: #ffffff; /* Texte blanc */
+    background-color: #e74c3c; /* Rouge vif pour signaler une erreur */
+    padding: 10px 15px; /* Ajoute de l'espace autour du texte */
+    margin: 15px 0; /* Espace entre le message et les autres éléments */
+    border-radius: 5px; /* Coins arrondis pour un design moderne */
+    text-align: center; /* Centre le texte */
+    font-size: 16px; /* Taille de texte adaptée */
+    font-weight: bold; /* Texte en gras pour plus de visibilité */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Légère ombre pour un effet en relief */
+    animation: fadeIn 0.5s ease-in-out; /* Animation douce pour l'apparition */
+}
+
+/* Animation pour faire apparaître le message */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

@@ -1,0 +1,41 @@
+/* Style pour la navbar */
+.navbar {
+    background-color: #007BFF;
+    overflow: hidden;
+    display: flex;
+    justify-content: space-between; /* Écarte les éléments (logo à gauche, menu à droite) */
+    align-items: center;           /* Centre verticalement */
+    padding: 10px 20px;
+}
+
+.navbar .logo {
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    text-decoration: none;
+}
+
+.navbar .menu {
+    display: flex;
+    gap: 15px; /* Espacement entre les liens */
+}
+
+.navbar a {
+    color: white;
+    text-decoration: none;
+    padding: 10px 15px;
+    font-weight: bold;
+}
+
+.navbar a:hover {
+    background-color: #0056b3;
+    border-radius: 4px;
+}
+
+/* Style pour l'image dans la navbar */
+.navbar .navbar-logo {
+    height: 50px; /* Ajustez la hauteur selon vos besoins */
+    width: auto;  /* Conserve les proportions de l'image */
+    margin-right: 10px; /* Espace entre l'image et le texte */
+    vertical-align: middle; /* Aligne l'image avec le texte */
+}

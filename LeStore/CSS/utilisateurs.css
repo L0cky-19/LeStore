@@ -1,0 +1,97 @@
+/* Style spécifique à la page utilisateurs */
+body {
+    background-color: #f9f9f9; /* Fond spécifique à cette page */
+    color: #333;
+}
+
+/* Conteneur principal pour la page utilisateurs */
+.container-utilisateurs {
+    max-width: 1400px; /* Fenêtre principale plus grande */
+    margin: 30px auto;
+    padding: 30px;
+    background-color: #ffffff;
+    border: 1px solid #ddd;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+}
+
+/* Tableau des utilisateurs */
+.table-utilisateurs {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.table-utilisateurs th,
+.table-utilisateurs td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.table-utilisateurs th {
+    background-color: #007BFF;
+    color: white;
+}
+
+.table-utilisateurs tr:hover {
+    background-color: #f1f1f1;
+}
+
+/* Bouton pour ajouter un utilisateur */
+.toggle-button {
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    cursor: pointer;
+    border-radius: 5px;
+    margin-bottom: 20px;
+
+    /* Centrage */
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.toggle-button:hover {
+    background-color: #0056b3;
+}
+
+/* Formulaire d'ajout d'utilisateur */
+.form-ajout-utilisateur {
+    display: none; /* Masqué par défaut */
+    margin-top: 20px;
+    padding: 20px;
+    border: 1px solid #ddd;
+    background-color: #f9f9f9;
+    border-radius: 5px;
+}
+
+.form-ajout-utilisateur label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-ajout-utilisateur input,
+.form-ajout-utilisateur select,
+.form-ajout-utilisateur button {
+    display: block;
+    width: 100%;
+    margin-bottom: 15px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.form-ajout-utilisateur button {
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+.form-ajout-utilisateur button:hover {
+    background-color: #0056b3;
+}
