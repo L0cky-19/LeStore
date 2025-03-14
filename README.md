@@ -63,8 +63,5 @@ CREATE TABLE Caisse (
 -- Insertion initiale dans la table Caisse (caisse totale à 0 au départ)
 INSERT INTO Caisse (montant_total) VALUES (0);
 
--- Insertion d'utilisateurs par défaut
-INSERT INTO Utilisateur (nom, prenom, mot_de_passe, role) VALUES
-('Garcia', 'Lucas', 'password', 'admin'), -- Un utilisateur admin par défaut
-('Vendeur', 'Test', 'password', 'utilisateur'); -- Un utilisateur standard par défaut
+
 
