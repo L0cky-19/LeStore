@@ -4,14 +4,15 @@
 Code pour ajouter la base de donner en MySQL : 
 
 -- Création de la base de données
-CREATE DATABASE IF NOT EXISTS gestion_stocks_caisses;
-USE gestion_stocks_caisses;
+CREATE DATABASE IF NOT EXISTS LeStore;
+USE LeStore;
 
 -- Table Utilisateur
 CREATE TABLE Utilisateur (
     id_utilisateur INT AUTO_INCREMENT PRIMARY KEY,
     nom VARCHAR(50) NOT NULL,
     prenom VARCHAR(50) NOT NULL,
+	identifiant VARCHAR(100) NOT NULL,
     mot_de_passe VARCHAR(255) NOT NULL,
     montant_ventes DECIMAL(10, 2) DEFAULT 0,
     role ENUM('utilisateur', 'admin') DEFAULT 'utilisateur' -- Définition des rôles
@@ -62,6 +63,5 @@ CREATE TABLE Caisse (
 
 -- Insertion initiale dans la table Caisse (caisse totale à 0 au départ)
 INSERT INTO Caisse (montant_total) VALUES (0);
-
 
 
