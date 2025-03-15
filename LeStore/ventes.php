@@ -288,4 +288,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finaliser_vente'])) {
         </div>
     </div>
 </body>
+<?php include 'includes/footer.php'; ?>
 </html>

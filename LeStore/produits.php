@@ -210,4 +210,5 @@ $produits_epuises = $stmt->fetchAll();
         </tbody>
     </table>
 </body>
+<?php include 'includes/footer.php'; ?>
 </html>

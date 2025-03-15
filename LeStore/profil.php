@@ -189,4 +189,5 @@ $total_pages = ceil($total_ventes / $ventes_par_page);
         <?php endif; ?>
     </div>
 </body>
+<?php include 'includes/footer.php'; ?>
 </html>

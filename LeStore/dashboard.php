@@ -60,4 +60,5 @@ $user_name = htmlspecialchars($user['prenom'] . ' ' . $user['nom']);
         </div>
     </div>
 </body>
+<?php include 'includes/footer.php'; ?>
 </html>
