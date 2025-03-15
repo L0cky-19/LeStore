@@ -109,3 +109,30 @@ body {
     background-color: #007BFF;
     color: #fff;
 }
+
+.caisse-title {
+    font-size: 1.5rem;
+    margin-top: 20px;
+    color: #333;
+    text-align: center;
+}
+
+.caisse-total {
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin: 20px auto;
+    width: 50%;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.caisse-total p {
+    font-size: 1.2rem;
+    margin: 10px 0;
+}
+
+.caisse-total strong {
+    color: #555;
+}

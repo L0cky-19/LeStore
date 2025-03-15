@@ -39,17 +39,22 @@ if (isset($_GET['supprimer_id'])) {
     $message = "Utilisateur supprimé avec succès.";
 }
 
-// Récupération des utilisateurs
+// Récupération des utilisateurs avec leur bénéfice total
 $stmt = $conn->query("
     SELECT 
         id_utilisateur, 
         nom, 
         prenom, 
         role, 
-        montant_ventes
+        montant_ventes, 
+        montant_benefices AS benefice
     FROM Utilisateur
 ");
 $utilisateurs = $stmt->fetchAll();
+
+// Récupération des données de la caisse
+$stmt = $conn->query("SELECT montant_total, benefice_total FROM Caisse WHERE id_caisse = 1");
+$caisse = $stmt->fetch();
 
 // Gestion de la pagination pour l'historique des ventes
 $ventes_par_page = 20;
@@ -57,12 +62,13 @@ $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $page = max(1, $page); // S'assurer que la page est au moins 1
 $offset = ($page - 1) * $ventes_par_page;
 
-// Récupération de l'historique des ventes avec les produits et quantités vendus
+// Récupération de l'historique des ventes avec les produits, quantités, utilisateurs et bénéfice total
 $stmt = $conn->prepare("
     SELECT 
         Vente.id_vente, 
         Vente.date_vente, 
         Vente.montant_total,
+        Vente.benefice_total AS benefice,
         GROUP_CONCAT(DISTINCT CONCAT(Produits.nom_produit, ' (', Detail_Vente.quantite, ')') SEPARATOR ', ') AS produits,
         GROUP_CONCAT(DISTINCT CONCAT(Utilisateur.nom, ' ', Utilisateur.prenom) SEPARATOR ', ') AS utilisateurs
     FROM Vente
@@ -95,15 +101,10 @@ $total_pages = ceil($total_ventes / $ventes_par_page);
     <link rel="stylesheet" href="css/utilisateurs.css">
 
     <script>
-        // Script pour afficher/masquer le formulaire d'ajout
         document.addEventListener("DOMContentLoaded", function () {
             const form = document.querySelector('.form-ajout-utilisateur');
             const toggleButton = document.querySelector('.toggle-button');
-
-            // Assurez-vous que le formulaire est caché au chargement
             form.style.display = 'none';
-
-            // Ajoutez un événement pour afficher/masquer le formulaire
             toggleButton.addEventListener('click', function () {
                 form.style.display = form.style.display === 'none' ? 'block' : 'none';
             });
@@ -120,10 +121,8 @@ $total_pages = ceil($total_ventes / $ventes_par_page);
             <p class="message"><?php echo htmlspecialchars($message); ?></p>
         <?php endif; ?>
 
-        <!-- Bouton pour afficher/masquer le formulaire -->
         <button class="toggle-button">Ajouter un utilisateur</button>
 
-        <!-- Formulaire pour ajouter un utilisateur -->
         <form action="utilisateurs.php" method="POST" class="form-ajout-utilisateur">
             <h2>Ajouter un utilisateur</h2>
             <label for="nom">Nom :</label>
@@ -144,11 +143,9 @@ $total_pages = ceil($total_ventes / $ventes_par_page);
                 <option value="admin">Admin</option>
             </select>
 
-
             <button type="submit" name="ajouter_utilisateur">Ajouter</button>
         </form>
 
-        <!-- Tableau des utilisateurs -->
         <table class="table-utilisateurs">
             <thead>
                 <tr>
@@ -157,6 +154,7 @@ $total_pages = ceil($total_ventes / $ventes_par_page);
                     <th>Prénom</th>
                     <th>Rôle</th>
                     <th>Total des ventes (€)</th>
+                    <th>Bénéfice (€)</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -168,6 +166,7 @@ $total_pages = ceil($total_ventes / $ventes_par_page);
                         <td><?php echo htmlspecialchars($user['prenom']); ?></td>
                         <td><?php echo htmlspecialchars($user['role']); ?></td>
                         <td><?php echo number_format($user['montant_ventes'], 2, ',', ' '); ?> €</td>
+                        <td><?php echo number_format($user['benefice'], 2, ',', ' '); ?> €</td>
                         <td>
                             <a href="utilisateurs.php?supprimer_id=<?php echo $user['id_utilisateur']; ?>" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?');">
                                 <button class="delete">Supprimer</button>
@@ -178,7 +177,12 @@ $total_pages = ceil($total_ventes / $ventes_par_page);
             </tbody>
         </table>
 
-        <!-- Historique des ventes -->
+        <h2>Caisse Total</h2>
+        <div class="caisse-total">
+            <p><strong>Montant Total des Ventes :</strong> <?php echo number_format($caisse['montant_total'], 2, ',', ' '); ?> €</p>
+            <p><strong>Bénéfice Total :</strong> <?php echo number_format($caisse['benefice_total'], 2, ',', ' '); ?> €</p>
+        </div>
+
         <h2>Historique des ventes</h2>
         <table class="table-ventes">
             <thead>
@@ -186,6 +190,7 @@ $total_pages = ceil($total_ventes / $ventes_par_page);
                     <th>ID Vente</th>
                     <th>Date</th>
                     <th>Montant Total (€)</th>
+                    <th>Bénéfice (€)</th>
                     <th>Produits (Quantité)</th>
                     <th>Utilisateurs impliqués</th>
                 </tr>
@@ -196,6 +201,7 @@ $total_pages = ceil($total_ventes / $ventes_par_page);
                         <td><?php echo htmlspecialchars($vente['id_vente']); ?></td>
                         <td><?php echo htmlspecialchars($vente['date_vente']); ?></td>
                         <td><?php echo number_format($vente['montant_total'], 2, ',', ' '); ?> €</td>
+                        <td><?php echo number_format($vente['benefice'], 2, ',', ' '); ?> €</td>
                         <td><?php echo htmlspecialchars($vente['produits']); ?></td>
                         <td><?php echo htmlspecialchars($vente['utilisateurs']); ?></td>
                     </tr>
@@ -203,7 +209,6 @@ $total_pages = ceil($total_ventes / $ventes_par_page);
             </tbody>
         </table>
 
-        <!-- Pagination -->
         <div class="pagination">
             <?php if ($page > 1): ?>
                 <a href="utilisateurs.php?page=<?php echo $page - 1; ?>">Précédent</a>

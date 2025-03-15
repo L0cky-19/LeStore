@@ -78,10 +78,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_panier'])) {
 
 // Calculer le montant total
 $montantTotal = 0;
+$beneficeTotal = 0; // Nouveau : calcul du bénéfice total
 foreach ($_SESSION['panier'] as $idProduit => $quantite) {
     foreach ($produits as $produit) {
         if ($produit['id_produit'] == $idProduit) {
-            $montantTotal += $produit['prix_unitaire'] * $quantite;
+            $montantTotal += $produit['prix_vente'] * $quantite;
+            $beneficeTotal += ($produit['prix_vente'] - $produit['prix_achat']) * $quantite; // Calcul du bénéfice
         }
     }
 }
@@ -98,13 +100,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finaliser_vente'])) {
             $db->beginTransaction();
 
             // Insérer la vente dans la table "Vente"
-            $stmt = $db->prepare("INSERT INTO Vente (montant_total) VALUES (:montant_total)");
-            $stmt->execute(['montant_total' => $montantTotal]);
+            $stmt = $db->prepare("INSERT INTO Vente (montant_total, benefice_total) VALUES (:montant_total, :benefice_total)");
+            $stmt->execute(['montant_total' => $montantTotal,'benefice_total' => $beneficeTotal]);
             $idVente = $db->lastInsertId();
+
 
             // Associer les produits à la vente et mettre à jour le stock
             foreach ($_SESSION['panier'] as $idProduit => $quantite) {
-                $stmt = $db->prepare("SELECT prix_unitaire, quantite_stock FROM Produits WHERE id_produit = :id_produit");
+                $stmt = $db->prepare("SELECT prix_vente, quantite_stock FROM Produits WHERE id_produit = :id_produit");
                 $stmt->execute(['id_produit' => $idProduit]);
                 $produit = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -113,21 +116,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finaliser_vente'])) {
                     throw new Exception("Stock insuffisant pour le produit : " . $idProduit);
                 }
 
-                $sousTotal = $produit['prix_unitaire'] * $quantite;
+                $sousTotal = $produit['prix_vente'] * $quantite;
 
-                $stmt = $db->prepare("INSERT INTO Detail_Vente (id_vente, id_produit, quantite, sous_total) VALUES (:id_vente, :id_produit, :quantite, :sous_total)");
+                $stmt = $db->prepare("INSERT INTO Detail_Vente (id_vente, id_produit, quantite, sous_total, benefice) VALUES (:id_vente, :id_produit, :quantite, :sous_total, :benefice)");
                 $stmt->execute([
                     'id_vente' => $idVente,
                     'id_produit' => $idProduit,
                     'quantite' => $quantite,
-                    'sous_total' => $sousTotal
+                    'sous_total' => $sousTotal,
+                    'benefice' => $beneficeTotal
                 ]);
 
                 $stmt = $db->prepare("UPDATE Produits SET quantite_stock = quantite_stock - :quantite WHERE id_produit = :id_produit");
                 $stmt->execute(['quantite' => $quantite, 'id_produit' => $idProduit]);
             }
 
-            // Associer les utilisateurs à la vente et mettre à jour leur montant_ventes
+            // Associer les utilisateurs à la vente et mettre à jour leur montant_ventes et montant_benefice
             $pourcentageParticipation = 100 / count($utilisateursSelectionnes);
             foreach ($utilisateursSelectionnes as $idUtilisateur) {
                 // Insérer dans la table Utilisateur_Vente
@@ -138,18 +142,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finaliser_vente'])) {
                     'pourcentage_participation' => $pourcentageParticipation
                 ]);
 
-                // Mettre à jour le montant_ventes de chaque utilisateur
+                // Mettre à jour le montant_ventes et le montant_benefice de chaque utilisateur
                 $montantUtilisateur = ($montantTotal * $pourcentageParticipation) / 100;
-                $stmt = $db->prepare("UPDATE Utilisateur SET montant_ventes = montant_ventes + :montant_ventes WHERE id_utilisateur = :id_utilisateur");
+                $beneficeUtilisateur = ($beneficeTotal * $pourcentageParticipation) / 100;
+
+                $stmt = $db->prepare("
+                    UPDATE Utilisateur 
+                    SET montant_ventes = montant_ventes + :montant_ventes, 
+                        montant_benefices = montant_benefices + :montant_benefices
+                    WHERE id_utilisateur = :id_utilisateur
+                ");
                 $stmt->execute([
                     'montant_ventes' => $montantUtilisateur,
+                    'montant_benefices' => $beneficeUtilisateur,
                     'id_utilisateur' => $idUtilisateur
                 ]);
             }
 
-            // Ajouter le montant total à la caisse
-            $stmt = $db->prepare("UPDATE Caisse SET montant_total = montant_total + :montant_total WHERE id_caisse = 1");
-            $stmt->execute(['montant_total' => $montantTotal]);
+            // Ajouter le montant total et le bénéfice total à la caisse
+            $stmt = $db->prepare("UPDATE Caisse SET montant_total = montant_total + :montant_total, benefice_total = benefice_total + :benefice_total WHERE id_caisse = 1");
+            $stmt->execute(['montant_total' => $montantTotal,'benefice_total' => $beneficeTotal]);
+
 
             $db->commit();
             $_SESSION['panier'] = []; // Vider le panier après la vente
@@ -161,7 +174,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finaliser_vente'])) {
     }
 }
 ?>
-
 
 <!DOCTYPE html>
 <html lang="fr">
@@ -185,13 +197,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finaliser_vente'])) {
         <?php endif; ?>
 
         <h2>Produits Disponibles</h2>
-        <?php foreach ($produits as $produit): ?>
-            <div class="produit">
-                <a href="?ajouter_produit=<?= $produit['id_produit'] ?>">
-                    <?= htmlspecialchars($produit['nom_produit']) ?> (Prix : <?= $produit['prix_unitaire'] ?> € | Stock : <?= $produit['quantite_stock'] ?>)
-                </a>
-            </div>
-        <?php endforeach; ?>
+        <div class="produits-categories">
+            <h3>Boissons</h3>
+            <?php foreach ($produits as $produit): ?>
+                <?php if ($produit['categorie'] === 'boisson'): ?>
+                    <div class="produit">
+                        <a href="?ajouter_produit=<?= $produit['id_produit'] ?>">
+                            <?= htmlspecialchars($produit['nom_produit']) ?> (Prix : <?= $produit['prix_vente'] ?> € | Stock : <?= $produit['quantite_stock'] ?>)
+                        </a>
+                    </div>
+                <?php endif; ?>
+            <?php endforeach; ?>
+
+            <h3>Produits Salés</h3>
+            <?php foreach ($produits as $produit): ?>
+                <?php if ($produit['categorie'] === 'nourriture salée'): ?>
+                    <div class="produit">
+                        <a href="?ajouter_produit=<?= $produit['id_produit'] ?>">
+                            <?= htmlspecialchars($produit['nom_produit']) ?> (Prix : <?= $produit['prix_vente'] ?> € | Stock : <?= $produit['quantite_stock'] ?>)
+                        </a>
+                    </div>
+                <?php endif; ?>
+            <?php endforeach; ?>
+
+            <h3>Produits Sucrés</h3>
+            <?php foreach ($produits as $produit): ?>
+                <?php if ($produit['categorie'] === 'nourriture sucrée'): ?>
+                    <div class="produit">
+                        <a href="?ajouter_produit=<?= $produit['id_produit'] ?>">
+                            <?= htmlspecialchars($produit['nom_produit']) ?> (Prix : <?= $produit['prix_vente'] ?> € | Stock : <?= $produit['quantite_stock'] ?>)
+                        </a>
+                    </div>
+                <?php endif; ?>
+            <?php endforeach; ?>
+        </div>
 
         <h2>Panier</h2>
         <form method="POST">
@@ -214,8 +253,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finaliser_vente'])) {
                                     <td>
                                         <input type="number" name="quantites[<?= $idProduit ?>]" value="<?= $quantite ?>" min="0">
                                     </td>
-                                    <td><?= $produit['prix_unitaire'] ?> €</td>
-                                    <td><?= $produit['prix_unitaire'] * $quantite ?> €</td>
+                                    <td><?= $produit['prix_vente'] ?> €</td>
+                                    <td><?= $produit['prix_vente'] * $quantite ?> €</td>
                                     <td>
                                         <a href="?supprimer_produit=<?= $idProduit ?>">Supprimer</a>
                                     </td>
@@ -228,7 +267,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finaliser_vente'])) {
             <button type="submit" name="update_panier">Mettre à jour le Panier</button>
         </form>
         <a href="?vider_panier" class="btn-danger">Vider le Panier</a>
-
 
         <!-- Section "Sélectionner les Utilisateurs" -->
         <div class="utilisateurs-section">

@@ -64,21 +64,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ancien_mot_de_passe']
 }
 
 // Récupération des informations de l'utilisateur
-$stmt = $conn->prepare("SELECT nom, prenom, identifiant FROM Utilisateur WHERE id_utilisateur = :id_utilisateur");
+$stmt = $conn->prepare("SELECT nom, prenom, identifiant, montant_ventes, montant_benefices FROM Utilisateur WHERE id_utilisateur = :id_utilisateur");
 $stmt->execute(['id_utilisateur' => $user_id]);
 $user = $stmt->fetch();
 
-// Récupération du nombre total de ventes et du montant total des ventes pour l'utilisateur
-$stmt = $conn->prepare("
-    SELECT COUNT(Vente.id_vente) AS total_ventes, SUM(Vente.montant_total) AS montant_total_ventes
-    FROM Utilisateur_Vente
-    JOIN Vente ON Utilisateur_Vente.id_vente = Vente.id_vente
-    WHERE Utilisateur_Vente.id_utilisateur = :id_utilisateur
-");
+// Récupération du nombre total de ventes pour l'utilisateur
+$stmt = $conn->prepare("SELECT COUNT(Vente.id_vente) AS total_ventes FROM Utilisateur_Vente JOIN Vente ON Utilisateur_Vente.id_vente = Vente.id_vente WHERE Utilisateur_Vente.id_utilisateur = :id_utilisateur");
 $stmt->execute(['id_utilisateur' => $user_id]);
-$stats_ventes = $stmt->fetch();
-$total_ventes = $stats_ventes['total_ventes'];
-$montant_total_ventes = $stats_ventes['montant_total_ventes'];
+$total_ventes = $stmt->fetchColumn();
 
 // Récupération de la page actuelle (par défaut : 1)
 $page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -154,7 +147,8 @@ $total_pages = ceil($total_ventes / $ventes_par_page);
     <div class="historique-ventes">
         <h2>Historique des ventes</h2>
         <p><strong>Total des ventes :</strong> <?= $total_ventes ?> ventes</p>
-        <p><strong>Montant total des ventes :</strong> <?= number_format($montant_total_ventes, 2) ?> €</p>
+        <p><strong>Montant total des ventes :</strong> <?= number_format($user['montant_ventes'], 2, ',', ' ') ?> €</p>
+        <p><strong>Bénéfice total :</strong> <?= number_format($user['montant_benefices'], 2, ',', ' ') ?> €</p>
 
         <?php if (count($ventes) > 0): ?>
             <table border="1">
@@ -170,7 +164,7 @@ $total_pages = ceil($total_ventes / $ventes_par_page);
                         <tr>
                             <td><?= htmlspecialchars($vente['id_vente']) ?></td>
                             <td><?= htmlspecialchars($vente['date_vente']) ?></td>
-                            <td><?= htmlspecialchars(number_format($vente['montant_total'], 2)) ?></td>
+                            <td><?= htmlspecialchars(number_format($vente['montant_total'], 2, ',', ' ')) ?></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>

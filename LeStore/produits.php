@@ -25,15 +25,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAdmin) {
             // Ajouter un produit
             $nom_produit = $_POST['nom_produit'];
             $quantite_stock = $_POST['quantite_stock'];
-            $prix_unitaire = $_POST['prix_unitaire'];
+            $prix_vente = $_POST['prix_vente'];
+            $prix_achat = $_POST['prix_achat']; // Nouveau champ pour le prix d'achat
+            $categorie = $_POST['categorie']; // Nouveau champ pour la catégorie
             $description = $_POST['description'] ?? null;
 
-            $stmt = $conn->prepare("INSERT INTO Produits (nom_produit, description, prix_unitaire, quantite_stock) VALUES (:nom_produit, :description, :prix_unitaire, :quantite_stock)");
+            $stmt = $conn->prepare("INSERT INTO Produits (nom_produit, description, prix_vente, prix_achat, quantite_stock, categorie) VALUES (:nom_produit, :description, :prix_vente, :prix_achat, :quantite_stock, :categorie)");
             $stmt->execute([
                 'nom_produit' => $nom_produit,
                 'description' => $description,
-                'prix_unitaire' => $prix_unitaire,
-                'quantite_stock' => $quantite_stock
+                'prix_vente' => $prix_vente,
+                'prix_achat' => $prix_achat,
+                'quantite_stock' => $quantite_stock,
+                'categorie' => $categorie
             ]);
             // Redirection pour éviter la soumission multiple
             header("Location: produits.php");
@@ -100,7 +104,14 @@ $produits_epuises = $stmt->fetchAll();
                 <input type="hidden" name="action" value="ajouter">
                 <input type="text" name="nom_produit" placeholder="Nom du produit" required>
                 <input type="number" name="quantite_stock" placeholder="Quantité en stock" min="0" required>
-                <input type="number" step="0.01" name="prix_unitaire" placeholder="Prix unitaire (€)" min="0" required>
+                <input type="number" step="0.01" name="prix_vente" placeholder="Prix de vente (€)" min="0" required>
+                <input type="number" step="0.01" name="prix_achat" placeholder="Prix d'achat (€)" min="0" required> <!-- Nouveau champ -->
+                <select name="categorie" required> <!-- Nouveau champ -->
+                    <option value="" disabled selected>Choisir une catégorie</option>
+                    <option value="nourriture salée">Nourriture salée</option>
+                    <option value="nourriture sucrée">Nourriture sucrée</option>
+                    <option value="boisson">Boisson</option>
+                </select>
                 <textarea name="description" placeholder="Description du produit (facultatif)"></textarea>
                 <button type="submit" class="btn-primary">Ajouter</button>
             </form>
@@ -127,7 +138,7 @@ $produits_epuises = $stmt->fetchAll();
                 <tr>
                     <td><?= htmlspecialchars($produit['nom_produit']) ?></td>
                     <td><?= htmlspecialchars($produit['quantite_stock']) ?></td>
-                    <td><?= htmlspecialchars(number_format($produit['prix_unitaire'], 2)) ?></td>
+                    <td><?= htmlspecialchars(number_format($produit['prix_vente'], 2)) ?></td>
                     <td><?= htmlspecialchars($produit['description'] ?? 'N/A') ?></td>
                     <?php if ($isAdmin): ?>
                         <!-- Colonne pour modifier la quantité -->
@@ -173,7 +184,7 @@ $produits_epuises = $stmt->fetchAll();
                 <tr>
                     <td><?= htmlspecialchars($produit['nom_produit']) ?></td>
                     <td><?= htmlspecialchars($produit['quantite_stock']) ?></td>
-                    <td><?= htmlspecialchars(number_format($produit['prix_unitaire'], 2)) ?></td>
+                    <td><?= htmlspecialchars(number_format($produit['prix_vente'], 2)) ?></td>
                     <td><?= htmlspecialchars($produit['description'] ?? 'N/A') ?></td>
                     <?php if ($isAdmin): ?>
                         <!-- Colonne pour restocker le produit -->
