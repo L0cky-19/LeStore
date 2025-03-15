@@ -6,7 +6,7 @@
             <nav class="footer-links">
                 <a href="https://www.service-public.fr/professionnels-entreprises/vosdroits/F31228" target="_blank" rel="noopener noreferrer">Mentions légales</a>
                 <a href="https://www.cnil.fr/fr/reglement-europeen-protection-donnees" target="_blank" rel="noopener noreferrer">Politique de confidentialité</a>
-                <a href="https://www.service-public.fr/professionnels-entreprises/vosdroits/F19064" target="_blank" rel="noopener noreferrer">Conditions d'utilisation</a>
+                <a href="https://www.sage.com/fr-fr/informations-legales/mit-license" target="_blank" rel="noopener noreferrer">Conditions d'utilisation</a>
             </nav>
         </div>
     </div>
