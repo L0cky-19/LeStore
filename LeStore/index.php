@@ -31,6 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Connexion</title>
+    <h1>Le Store</h1>
     <!-- Inclusion du style -->
     <link rel="stylesheet" href="css/global.css">
     <link rel="stylesheet" href="css/connexion.css">
@@ -38,14 +39,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 </head>
 <body>
     <div class="login-container">
-        <h1>Connexion</h1>
-        <?php if (isset($error)) echo "<p class='error-message'>$error</p>"; ?>
-        <form method="POST" action="">
-            <input type="text" name="identifiant" placeholder="Identifiant" required>
-            <input type="password" name="mot_de_passe" placeholder="Mot de passe" required>
-            <button type="submit">Se connecter</button>
-            <p>Pas encore de compte ? Contacte <b>Lucas</b> ou <b>Selena</b>
-        </form>
-    </div>
+    <h1>Connexion</h1>
+    <?php if (isset($error)) echo "<p class='error-message'>$error</p>"; ?>
+    <form method="POST" action="">
+        <input type="text" name="identifiant" placeholder="Identifiant" required>
+        <input type="password" name="mot_de_passe" placeholder="Mot de passe" required>
+        <button type="submit">Se connecter</button>
+    </form>
+</div>
+
 </body>
 </html>

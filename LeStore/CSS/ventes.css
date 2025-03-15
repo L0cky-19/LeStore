@@ -135,3 +135,47 @@ h2 span {
     color: #007BFF;
     font-weight: bold;
 }
+
+/* Liste des utilisateurs */
+.utilisateurs-list {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center; /* Centrer les éléments */
+    gap: 20px; /* Espacement entre les blocs des utilisateurs */
+    margin-top: 20px; /* Espacement supérieur */
+    padding: 10px; /* Espacement interne */
+    background-color: #f8f9fa; /* Fond léger pour différencier la section */
+    border: 1px solid #ddd; /* Bordure pour délimiter la section */
+    border-radius: 10px; /* Bords arrondis */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Légère ombre */
+}
+
+/* Message de succès */
+.message.success {
+    margin: 20px auto; /* Centrer le message */
+    padding: 15px 20px; /* Espacement interne */
+    background-color: #d4edda; /* Fond vert clair */
+    color: #155724; /* Texte vert foncé */
+    border: 1px solid #c3e6cb; /* Bordure verte */
+    border-radius: 10px; /* Coins arrondis */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Légère ombre */
+    text-align: center; /* Centrer le texte */
+    font-size: 16px; /* Taille du texte */
+    font-weight: bold; /* Texte en gras */
+    max-width: 600px; /* Largeur maximale */
+}
+
+/* Message d'erreur */
+.message.error {
+    margin: 20px auto; /* Centrer le message */
+    padding: 15px 20px; /* Espacement interne */
+    background-color: #f8d7da; /* Fond rouge clair */
+    color: #721c24; /* Texte rouge foncé */
+    border: 1px solid #f5c6cb; /* Bordure rouge */
+    border-radius: 10px; /* Coins arrondis */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Légère ombre */
+    text-align: center; /* Centrer le texte */
+    font-size: 16px; /* Taille du texte */
+    font-weight: bold; /* Texte en gras */
+    max-width: 600px; /* Largeur maximale */
+}

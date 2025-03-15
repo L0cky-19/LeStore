@@ -6,8 +6,6 @@ session_start();
 include 'includes/db2.php';
 include 'includes/header.php';
 
-// Vérifier si la connexion à la base de données est établie
-
 // Récupération des produits et des utilisateurs depuis la base de données
 try {
     $produits = $db->query("SELECT * FROM Produits")->fetchAll(PDO::FETCH_ASSOC);
@@ -76,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finaliser_vente'])) {
     $utilisateursSelectionnes = $_POST['utilisateurs'] ?? [];
 
     if (empty($utilisateursSelectionnes)) {
-        echo "<p>Erreur : Aucun utilisateur sélectionné pour la vente.</p>";
+        $messageError = "Erreur : Aucun utilisateur sélectionné pour la vente.";
     } else {
         try {
             // Démarrer une transaction
@@ -107,14 +105,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finaliser_vente'])) {
                 $stmt->execute(['quantite' => $quantite, 'id_produit' => $idProduit]);
             }
 
-            // Associer les utilisateurs à la vente
+            // Associer les utilisateurs à la vente et mettre à jour leur montant_ventes
             $pourcentageParticipation = 100 / count($utilisateursSelectionnes);
             foreach ($utilisateursSelectionnes as $idUtilisateur) {
+                // Insérer dans la table Utilisateur_Vente
                 $stmt = $db->prepare("INSERT INTO Utilisateur_Vente (id_utilisateur, id_vente, pourcentage_participation) VALUES (:id_utilisateur, :id_vente, :pourcentage_participation)");
                 $stmt->execute([
                     'id_utilisateur' => $idUtilisateur,
                     'id_vente' => $idVente,
                     'pourcentage_participation' => $pourcentageParticipation
+                ]);
+
+                // Mettre à jour le montant_ventes de chaque utilisateur
+                $montantUtilisateur = ($montantTotal * $pourcentageParticipation) / 100;
+                $stmt = $db->prepare("UPDATE Utilisateur SET montant_ventes = montant_ventes + :montant_ventes WHERE id_utilisateur = :id_utilisateur");
+                $stmt->execute([
+                    'montant_ventes' => $montantUtilisateur,
+                    'id_utilisateur' => $idUtilisateur
                 ]);
             }
 
@@ -124,10 +131,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finaliser_vente'])) {
 
             $db->commit();
             $_SESSION['panier'] = []; // Vider le panier après la vente
-            echo "<p>La vente a été enregistrée avec succès !</p>";
+            $messageSuccess = "La vente a été enregistrée avec succès !";
         } catch (Exception $e) {
             $db->rollBack();
-            echo "<p>Erreur : " . $e->getMessage() . "</p>";
+            $messageError = "Erreur : " . $e->getMessage();
         }
     }
 }
@@ -144,6 +151,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finaliser_vente'])) {
 <body>
     <div class="container-ventes">
         <h1>Effectuer une Vente</h1>
+
+        <!-- Messages -->
+        <?php if (isset($messageSuccess)): ?>
+            <div class="message success"><?= $messageSuccess ?></div>
+        <?php endif; ?>
+
+        <?php if (isset($messageError)): ?>
+            <div class="message error"><?= $messageError ?></div>
+        <?php endif; ?>
 
         <h2>Produits Disponibles</h2>
         <?php foreach ($produits as $produit): ?>
@@ -190,20 +206,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finaliser_vente'])) {
         </form>
         <a href="?vider_panier" class="btn-danger">Vider le Panier</a>
 
-        <h2>Montant Total : <?= $montantTotal ?> €</h2>
 
-        <h2>Sélectionner les Utilisateurs</h2>
-        <form method="POST">
-            <select name="utilisateurs[]" multiple>
-                <?php foreach ($utilisateurs as $utilisateur): ?>
-                    <option value="<?= $utilisateur['id_utilisateur'] ?>">
-                        <?= htmlspecialchars($utilisateur['nom'] . ' ' . $utilisateur['prenom']) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-
-            <button type="submit" name="finaliser_vente">Vendre</button>
-        </form>
+        <!-- Section "Sélectionner les Utilisateurs" -->
+        <div class="utilisateurs-section">
+            <h2>Sélectionner les Utilisateurs</h2>
+            <form method="POST">
+                <div class="utilisateurs-list">
+                    <?php foreach ($utilisateurs as $utilisateur): ?>
+                        <div class="utilisateur">
+                            <input type="checkbox" name="utilisateurs[]" value="<?= $utilisateur['id_utilisateur'] ?>" id="utilisateur-<?= $utilisateur['id_utilisateur'] ?>">
+                            <label for="utilisateur-<?= $utilisateur['id_utilisateur'] ?>">
+                                <?= htmlspecialchars($utilisateur['nom'] . ' ' . $utilisateur['prenom']) ?>
+                            </label>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+                <h2>Montant Total : <?= $montantTotal ?> €</h2>
+                <button type="submit" name="finaliser_vente" class="btn-submit">Vendre</button>
+            </form>
+        </div>
     </div>
 </body>
 </html>
