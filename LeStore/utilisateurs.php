@@ -20,10 +20,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajouter_utilisateur']
     $prenom = htmlspecialchars($_POST['prenom']);
     $identifiant = htmlspecialchars($_POST['identifiant']);
     $role = htmlspecialchars($_POST['role']);
+    $mot_de_passe = htmlspecialchars($_POST['mot_de_passe']);
 
-    if (!empty($nom) && !empty($prenom) && !empty($identifiant) && !empty($role)) {
+    if (!empty($nom) && !empty($prenom) && !empty($identifiant) && !empty($role) && !empty($mot_de_passe)) {
         $stmt = $conn->prepare("INSERT INTO Utilisateur (nom, prenom, mot_de_passe, role) VALUES (?, ?, ?, ?)");
-        $stmt->execute([$nom, $prenom, password_hash('default_password', PASSWORD_DEFAULT), $role]);
+        $stmt->execute([$nom, $prenom, password_hash($mot_de_passe, PASSWORD_DEFAULT), $role]);
         $message = "Utilisateur ajouté avec succès.";
     } else {
         $message = "Veuillez remplir tous les champs.";
@@ -44,12 +45,44 @@ $stmt = $conn->query("
         id_utilisateur, 
         nom, 
         prenom, 
-        identifiant,
         role, 
         montant_ventes
     FROM Utilisateur
 ");
 $utilisateurs = $stmt->fetchAll();
+
+// Gestion de la pagination pour l'historique des ventes
+$ventes_par_page = 20;
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$page = max(1, $page); // S'assurer que la page est au moins 1
+$offset = ($page - 1) * $ventes_par_page;
+
+// Récupération de l'historique des ventes avec les produits et quantités vendus
+$stmt = $conn->prepare("
+    SELECT 
+        Vente.id_vente, 
+        Vente.date_vente, 
+        Vente.montant_total,
+        GROUP_CONCAT(DISTINCT CONCAT(Produits.nom_produit, ' (', Detail_Vente.quantite, ')') SEPARATOR ', ') AS produits,
+        GROUP_CONCAT(DISTINCT CONCAT(Utilisateur.nom, ' ', Utilisateur.prenom) SEPARATOR ', ') AS utilisateurs
+    FROM Vente
+    LEFT JOIN Utilisateur_Vente ON Vente.id_vente = Utilisateur_Vente.id_vente
+    LEFT JOIN Utilisateur ON Utilisateur_Vente.id_utilisateur = Utilisateur.id_utilisateur
+    LEFT JOIN Detail_Vente ON Vente.id_vente = Detail_Vente.id_vente
+    LEFT JOIN Produits ON Detail_Vente.id_produit = Produits.id_produit
+    GROUP BY Vente.id_vente
+    ORDER BY Vente.date_vente DESC
+    LIMIT :offset, :limit
+");
+$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+$stmt->bindValue(':limit', $ventes_par_page, PDO::PARAM_INT);
+$stmt->execute();
+$ventes = $stmt->fetchAll();
+
+// Récupération du nombre total de ventes pour la pagination
+$stmt = $conn->query("SELECT COUNT(*) AS total_ventes FROM Vente");
+$total_ventes = $stmt->fetch()['total_ventes'];
+$total_pages = ceil($total_ventes / $ventes_par_page);
 ?>
 
 <!DOCTYPE html>
@@ -60,8 +93,6 @@ $utilisateurs = $stmt->fetchAll();
     <title>Gestion des utilisateurs</title>
     <link rel="stylesheet" href="css/global.css">
     <link rel="stylesheet" href="css/utilisateurs.css">
-    
-
 
     <script>
         // Script pour afficher/masquer le formulaire d'ajout
@@ -104,11 +135,15 @@ $utilisateurs = $stmt->fetchAll();
             <label for="identifiant">Identifiant :</label>
             <input type="text" id="identifiant" name="identifiant" required>
 
+            <label for="mot_de_passe">Mot de passe :</label>
+            <input type="password" id="mot_de_passe" name="mot_de_passe" required>
+            
             <label for="role">Rôle :</label>
             <select id="role" name="role" required>
                 <option value="utilisateur">Utilisateur</option>
                 <option value="admin">Admin</option>
             </select>
+
 
             <button type="submit" name="ajouter_utilisateur">Ajouter</button>
         </form>
@@ -120,7 +155,6 @@ $utilisateurs = $stmt->fetchAll();
                     <th>ID</th>
                     <th>Nom</th>
                     <th>Prénom</th>
-                    <th>Identifiant</th>
                     <th>Rôle</th>
                     <th>Total des ventes (€)</th>
                     <th>Actions</th>
@@ -132,7 +166,6 @@ $utilisateurs = $stmt->fetchAll();
                         <td><?php echo htmlspecialchars($user['id_utilisateur']); ?></td>
                         <td><?php echo htmlspecialchars($user['nom']); ?></td>
                         <td><?php echo htmlspecialchars($user['prenom']); ?></td>
-                        <td><?php echo htmlspecialchars($user['identifiant']); ?></td>
                         <td><?php echo htmlspecialchars($user['role']); ?></td>
                         <td><?php echo number_format($user['montant_ventes'], 2, ',', ' '); ?> €</td>
                         <td>
@@ -144,6 +177,48 @@ $utilisateurs = $stmt->fetchAll();
                 <?php endforeach; ?>
             </tbody>
         </table>
+
+        <!-- Historique des ventes -->
+        <h2>Historique des ventes</h2>
+        <table class="table-ventes">
+            <thead>
+                <tr>
+                    <th>ID Vente</th>
+                    <th>Date</th>
+                    <th>Montant Total (€)</th>
+                    <th>Produits (Quantité)</th>
+                    <th>Utilisateurs impliqués</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($ventes as $vente) : ?>
+                    <tr>
+                        <td><?php echo htmlspecialchars($vente['id_vente']); ?></td>
+                        <td><?php echo htmlspecialchars($vente['date_vente']); ?></td>
+                        <td><?php echo number_format($vente['montant_total'], 2, ',', ' '); ?> €</td>
+                        <td><?php echo htmlspecialchars($vente['produits']); ?></td>
+                        <td><?php echo htmlspecialchars($vente['utilisateurs']); ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+
+        <!-- Pagination -->
+        <div class="pagination">
+            <?php if ($page > 1): ?>
+                <a href="utilisateurs.php?page=<?php echo $page - 1; ?>">Précédent</a>
+            <?php endif; ?>
+
+            <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                <a href="utilisateurs.php?page=<?php echo $i; ?>" <?php if ($i === $page) echo 'class="active"'; ?>>
+                    <?php echo $i; ?>
+                </a>
+            <?php endfor; ?>
+
+            <?php if ($page < $total_pages): ?>
+                <a href="utilisateurs.php?page=<?php echo $page + 1; ?>">Suivant</a>
+            <?php endif; ?>
+        </div>
     </div>
 </body>
 </html>
