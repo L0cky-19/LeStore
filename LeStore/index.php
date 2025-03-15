@@ -45,6 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <input type="text" name="identifiant" placeholder="Identifiant" required>
         <input type="password" name="mot_de_passe" placeholder="Mot de passe" required>
         <button type="submit">Se connecter</button>
+        <p>Pas encore de compte ? Contacte <b>Lucas</b> ou <b>Selena</b>.</p>
     </form>
 </div>
 

@@ -8,7 +8,8 @@ include 'includes/header.php';
 
 // Récupération des produits et des utilisateurs depuis la base de données
 try {
-    $produits = $db->query("SELECT * FROM Produits")->fetchAll(PDO::FETCH_ASSOC);
+    // Ne récupérer que les produits dont la quantité en stock est supérieure à 0
+    $produits = $db->query("SELECT * FROM Produits WHERE quantite_stock > 0")->fetchAll(PDO::FETCH_ASSOC);
     $utilisateurs = $db->query("SELECT * FROM Utilisateur")->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
     die("Erreur lors de la récupération des données : " . $e->getMessage());
@@ -22,10 +23,20 @@ if (!isset($_SESSION['panier'])) {
 // Ajouter un produit au panier
 if (isset($_GET['ajouter_produit'])) {
     $idProduit = (int)$_GET['ajouter_produit'];
-    if (!isset($_SESSION['panier'][$idProduit])) {
-        $_SESSION['panier'][$idProduit] = 1; // Initialiser avec une quantité de 1
-    } else {
-        $_SESSION['panier'][$idProduit]++; // Augmenter la quantité
+
+    // Vérifier si le produit existe et s'il est en stock
+    foreach ($produits as $produit) {
+        if ($produit['id_produit'] == $idProduit && $produit['quantite_stock'] > 0) {
+            if (!isset($_SESSION['panier'][$idProduit])) {
+                $_SESSION['panier'][$idProduit] = 1; // Initialiser avec une quantité de 1
+            } else {
+                // Vérifier que la quantité ajoutée ne dépasse pas le stock disponible
+                if ($_SESSION['panier'][$idProduit] < $produit['quantite_stock']) {
+                    $_SESSION['panier'][$idProduit]++;
+                }
+            }
+            break;
+        }
     }
     header('Location: ventes.php');
     exit;
@@ -49,10 +60,16 @@ if (isset($_GET['vider_panier'])) {
 // Mettre à jour les quantités dans le panier
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_panier'])) {
     foreach ($_POST['quantites'] as $idProduit => $quantite) {
-        if ($quantite > 0) {
-            $_SESSION['panier'][$idProduit] = $quantite;
-        } else {
-            unset($_SESSION['panier'][$idProduit]); // Supprimer le produit si la quantité est 0
+        foreach ($produits as $produit) {
+            if ($produit['id_produit'] == $idProduit) {
+                // Vérifier que la quantité demandée ne dépasse pas le stock disponible
+                if ($quantite > 0 && $quantite <= $produit['quantite_stock']) {
+                    $_SESSION['panier'][$idProduit] = $quantite;
+                } else {
+                    unset($_SESSION['panier'][$idProduit]); // Supprimer le produit si la quantité est invalide
+                }
+                break;
+            }
         }
     }
     header('Location: ventes.php');
@@ -87,11 +104,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finaliser_vente'])) {
 
             // Associer les produits à la vente et mettre à jour le stock
             foreach ($_SESSION['panier'] as $idProduit => $quantite) {
-                $stmt = $db->prepare("SELECT prix_unitaire FROM Produits WHERE id_produit = :id_produit");
+                $stmt = $db->prepare("SELECT prix_unitaire, quantite_stock FROM Produits WHERE id_produit = :id_produit");
                 $stmt->execute(['id_produit' => $idProduit]);
-                $prixUnitaire = $stmt->fetchColumn();
+                $produit = $stmt->fetch(PDO::FETCH_ASSOC);
 
-                $sousTotal = $prixUnitaire * $quantite;
+                // Vérifier que le stock est suffisant avant de finaliser la vente
+                if ($produit['quantite_stock'] < $quantite) {
+                    throw new Exception("Stock insuffisant pour le produit : " . $idProduit);
+                }
+
+                $sousTotal = $produit['prix_unitaire'] * $quantite;
 
                 $stmt = $db->prepare("INSERT INTO Detail_Vente (id_vente, id_produit, quantite, sous_total) VALUES (:id_vente, :id_produit, :quantite, :sous_total)");
                 $stmt->execute([
@@ -139,6 +161,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['finaliser_vente'])) {
     }
 }
 ?>
+
 
 <!DOCTYPE html>
 <html lang="fr">
